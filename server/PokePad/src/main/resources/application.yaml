@@ -1,3 +1,16 @@
 spring:
   application:
     name: PokePad
+  datasource:
+    url: jdbc:postgresql://localhost:5444/pokecollector_db
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true    # shows the queries Spring makes
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    
