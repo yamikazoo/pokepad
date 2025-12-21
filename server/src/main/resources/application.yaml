@@ -2,9 +2,9 @@ spring:
   application:
     name: PokePad
   datasource:
-    url: jdbc:postgresql://localhost:5444/pokecollector_db
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/pokepad_db
+    username: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
