@@ -1,0 +1,30 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table cards {
+  id long [primary key]
+  name varchar
+  set_id varchar
+  image_url varchar
+  language varchar
+  artist varchar
+  rarity varchar
+}
+
+Table users {
+  id long [primary key]
+  username varchar [unique]
+  password varchar
+}
+
+Table collections {
+  id long [primary key]
+  name varchar
+  user_id long [ref: > users.id] // many to one
+}
+
+// join table
+Table collection_cards {
+  collection_id long [ref: > collections.id]
+  card_id long [ref: > cards.id]
+}
