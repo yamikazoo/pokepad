@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import java.util.List;
 import lombok.Data;
 import lombok.ToString;
@@ -26,6 +27,6 @@ public class User {
 
     // foreign key relationship to collections of this user
     @ToString.Exclude // avoid stack overflow from circular referencing of users and collections
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Collection> collections;
 }
