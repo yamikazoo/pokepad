@@ -1,4 +1,6 @@
-# pokepad
+# PokePad
+
+By: Calvin Weng and Brian Yu
 
 This is a web app that covers all your pokemon TCG needs. Features:
 - View every card from every set
