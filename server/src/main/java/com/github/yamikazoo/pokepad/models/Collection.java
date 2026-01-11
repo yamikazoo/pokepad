@@ -11,6 +11,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.Column;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Data;
 import lombok.ToString;
 
@@ -36,7 +39,8 @@ public class Collection {
     private List<Card> cards;
     
     // creates a many to one foreign key relationship to User
-    @ToString.Exclude // avoid stack overflow from circular referencing of collections and cards
+    @ToString.Exclude   // avoid stack overflow from infinite referencing of collections and cards (stringification)
+    @JsonIgnore        // Prevents API infinite loop for collections -> user -> collections (JSON serialization)
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
