@@ -1,72 +1,86 @@
 package com.github.yamikazoo.pokepad.config;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.yamikazoo.pokepad.models.Card;
-import com.github.yamikazoo.pokepad.models.User;
-import com.github.yamikazoo.pokepad.models.Collection;
 import com.github.yamikazoo.pokepad.repositories.CardRepository;
-import com.github.yamikazoo.pokepad.repositories.CollectionRepository;
-import com.github.yamikazoo.pokepad.repositories.UserRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Value;
 
-@Component  // tells Spring to manage this class as a bean
-public class DataSeeder implements CommandLineRunner{
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class DataSeeder implements CommandLineRunner {
+
     private final CardRepository cardRepository;
+    private final ObjectMapper objectMapper; // spring's tool for reading JSON
 
-    // inject CardRepository via constructor
-    public DataSeeder(CardRepository cardRepository) {
+    // uses the value from application.yaml
+    @Value("${pokemon.api.key}")
+    private String apiKey;
+
+    public DataSeeder(CardRepository cardRepository, ObjectMapper objectMapper) {
         this.cardRepository = cardRepository;
+        this.objectMapper = objectMapper;
     }
-
-    @Autowired 
-    private UserRepository userRepository;
-    
-    @Autowired 
-    private CollectionRepository collectionRepository;
 
     @Override
     public void run(String... args) {
-        // if no cards exist, seed some initial cards
+        // only run if the database is empty
         if (cardRepository.count() == 0) {
-            Card c1 = createCard("Charizard", "base1-4", "https://images.pokemontcg.io/base1/4_hires.png", "Rare Holo", "Mitsuhiro Arita");
-            Card c2 = createCard("Blastoise", "base1-2", "https://images.pokemontcg.io/base1/2_hires.png", "Rare Holo", "Ken Sugimori");
-            Card c3 = createCard("Venusaur", "base1-15", "https://images.pokemontcg.io/base1/15_hires.png", "Rare Holo", "Mitsuhiro Arita");
-            Card c4 = createCard("Mewtwo", "base1-10", "https://images.pokemontcg.io/base1/10_hires.png", "Rare Holo", "Ken Sugimori");
-
-            cardRepository.saveAll(Arrays.asList(c1, c2, c3, c4));
-            System.out.println("4 Cards added to the database");
-        }
-
-        // if no users exist, create a test user and a collection
-        if (userRepository.count() == 0) {
-            // create a test user
-            User tester = new User();
-            tester.setUsername("TrainerRed");
-            tester.setPassword("password123"); // temporary unhashed password for testing purposes, to be changed 
-            userRepository.save(tester);
-
-            // create a test collection for the user
-            Collection binder = new Collection();
-            binder.setName("My Favorites");
-            binder.setUser(tester); // link collection to test user
-            collectionRepository.save(binder);
-            
-            System.out.println("User 'TrainerRed' and collection 'My Favorites' created");
+            System.out.println("fetching Prismatic Evolutions set from API...");
+            try {
+                seedPrismaticEvolutions();
+            } catch (Exception e) {
+                System.out.println("error seeding data: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
-    // Helper method to keep the code clean
-    private Card createCard(String name, String setId, String url, String rarity, String artist) {
-        Card card = new Card();
-        card.setName(name);
-        card.setSetId(setId);
-        card.setImageUrl(url);
-        card.setRarity(rarity);
-        card.setArtist(artist);
-        card.setLanguage("EN");
-        return card;
+    // method to fetch and seed Prismatic Evolutions set from the Pokemon TCG API
+    private void seedPrismaticEvolutions() throws Exception {
+        // build the request (asking for set 'sv8pt5' - Prismatic Evolutions)
+        String apiUrl = "https://api.pokemontcg.io/v2/cards?q=set.id:sv8pt5&pageSize=250";
+        
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(apiUrl))
+                .header("X-Api-Key", apiKey) // fill in later
+                .build();
+
+        // send the request
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // parse the JSON response
+        JsonNode root = objectMapper.readTree(response.body());
+        JsonNode dataArray = root.path("data");
+
+        List<Card> cardBatch = new ArrayList<>();
+
+        if (dataArray.isArray()) {
+            for (JsonNode node : dataArray) {
+                Card card = new Card();
+                card.setName(node.path("name").asText());
+                card.setSetId(node.path("id").asText());
+                // grab the high res if available, otherwise small
+                card.setImageUrl(node.path("images").path("large").asText());
+                card.setRarity(node.path("rarity").asText("Unknown"));
+                card.setArtist(node.path("artist").asText("Unknown"));
+                
+                // add to card list
+                cardBatch.add(card);
+            }
+        }
+
+        // save all cards to the database in one go
+        cardRepository.saveAll(cardBatch);
+        System.out.println("successfully seeded " + cardBatch.size() + " cards from Prismatic Evolutions!");
     }
 }

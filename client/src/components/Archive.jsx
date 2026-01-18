@@ -6,7 +6,7 @@ function Archive({ onBack }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // This is the "Bridge" to your Java Backend
+    // connection bridge to the java springboot backend
     useEffect(() => {
         fetch('http://localhost:8080/api/cards')
             .then(response => {
@@ -37,8 +37,13 @@ function Archive({ onBack }) {
             <div className="card-grid">
                 {cards.map(card => (
                     <div key={card.id} className="card-item">
-                        {/* We use the image URL from your DataSeeder */}
-                        <img src={card.imageUrl} alt={card.name} />
+                        <img 
+                            src={card.imageUrl} 
+                            alt={card.name} 
+                            loading="lazy"   // lazy loading for performance
+                            width="245"     
+                            height="342"    
+                        />
                         <h3>{card.name}</h3>
                         <p>{card.rarity}</p>
                     </div>

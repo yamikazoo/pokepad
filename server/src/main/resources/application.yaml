@@ -13,4 +13,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    
+
+# Pokemon TCG API configuration
+# get API key at: https://dev.pokemontcg.io/
+pokemon:
+  api:
+    key: ${POKEMON_API_KEY:}  # leave empty for basic rates
